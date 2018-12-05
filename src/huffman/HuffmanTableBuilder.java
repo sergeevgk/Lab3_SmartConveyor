@@ -74,7 +74,7 @@ public class HuffmanTableBuilder {
      * @param code Temporary string accumulating char representation of bits in new bit sequence for current byte
      * @param map  container for pairs (byte value, matching code)
      *             <p>
-     *             traverses tree via DFS algorithm, accumulating code for byte value in tree's leaf
+     *             traverses tree via DFS algorithm, accumulating code for byte value in tree'setConsumer leaf
      */
     private void traverse(Node tree, String code, Map<Byte, String> map) {
         if (tree == null) {

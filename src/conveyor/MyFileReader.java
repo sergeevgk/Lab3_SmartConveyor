@@ -4,25 +4,17 @@ import config.GrammarWorker;
 import log.Log;
 
 import java.io.*;
-import java.util.ArrayList;
 import java.util.Map;
 
 public class MyFileReader {
-    private BufferedInputStream reader;
+    private DataInputStream reader;
     private Integer bufferSize;
     //private Integer codeMode;
 
-    public MyFileReader(Map<GrammarWorker, String> configWorker, BufferedInputStream inputStream) {
+    public MyFileReader(Map<GrammarWorker, String> configWorker, DataInputStream inputStream) {
         this.reader = inputStream;
         this.bufferSize = Integer.parseInt(configWorker.get(GrammarWorker.BUFFER_SIZE));
     }
-
-    /*public conveyor.MyFileReader(Options options) throws IOException {
-            FileInputStream inStream = new FileInputStream(options.configMain.get(GrammarMain.IN));
-            this.reader = new BufferedInputStream(inStream);
-            this.bufferSize = Integer.parseInt(options.configOptions.get(GrammarOptions.BUFFER_SIZE));
-            //this.codeMode = Integer.parseInt(options.configOptions.get(GrammarOptions.CODE_MODE));
-    }*/
 
     /**
      * @return byte[] array - sequence of read bytes
@@ -58,16 +50,5 @@ public class MyFileReader {
 
         }
     }
-
-   /* private byte[] convertToPrimitive(ArrayList<Byte> list) {
-        byte[] array = new byte[list.size()];
-        Byte[] Array = list.toArray(new Byte[list.size()]);
-        int index = 0;
-        for (Byte B : Array) {
-            array[index] = Array[index];
-            index += 1;
-        }
-        return array;
-    }*/
 
 }

@@ -22,9 +22,9 @@ public class HuffmanAlgorithm {
      * <p>
      * Method starts process of encoding/decoding input array values using huffman table
      */
-    public HuffmanAlgorithmResult startProcess(byte[] source) {
+    public HuffmanAlgorithmResult startProcess(byte[] source, int symbolNum) {
         String codeMode = configWorker.get(GrammarWorker.CODE_MODE);
-        return processCoder(source, codeMode);
+        return processCoder(source, codeMode, symbolNum);
     }
 
     /**
@@ -35,11 +35,11 @@ public class HuffmanAlgorithm {
      * <p>
      * Method decides whether to encode or decode input sequence
      */
-    private HuffmanAlgorithmResult processCoder(byte[] s, String mode) {
+    private HuffmanAlgorithmResult processCoder(byte[] s, String mode, int symbolNum) {
         if (mode.equals(ENCODE)) {
             return encode(s);
         } else if (mode.equals(DECODE)) {
-            return decode(s);
+            return decode(s, symbolNum);
         }
         return null;
     }
@@ -49,16 +49,16 @@ public class HuffmanAlgorithm {
      * @return HuffmanAlgorithmResult with empty extraSymbols field - algorithm encodes all given values in sequence
      */
     private HuffmanAlgorithmResult encode(byte[] source) {
-        BitByteConverter conv = BitByteConverter.getInstance();
+        DataConverterImpl conv = DataConverterImpl.getInstance();
         byte[] extra = {};
         byte[] tempRes = toHuffman(source, huffmanTable).getBytes();
         byte[] res = conv.convertBitArrayToBytes(tempRes);
-        return new HuffmanAlgorithmResult(res, huffmanTable, extra, tempRes.length);
+        return new HuffmanAlgorithmResult(res, extra, tempRes.length);
     }
 
     /**
      * @param source       byte sequence to encode
-     * @param huffmanTable map of pairs (byte - string equals to byte's new representation as bit sequence)
+     * @param huffmanTable map of pairs (byte - string equals to byte'setConsumer new representation as bit sequence)
      * @return string representation of bit sequence matching with byte value
      * <p>
      * Method encodes byte sequence into sequence of "0" and "1" equals to string representation of bit sequence
@@ -68,7 +68,7 @@ public class HuffmanAlgorithm {
         for (byte c : source) {
             s.append(huffmanTable.get(c));
         }
-        //System.out.println(s);
+        //System.out.println(setConsumer);
         return s.toString();
     }
 
@@ -79,7 +79,7 @@ public class HuffmanAlgorithm {
      * <p>
      * Method decodes encoded sequence, represented by byte array
      */
-    private HuffmanAlgorithmResult decode(byte[] source) {
+    private HuffmanAlgorithmResult decode(byte[] source, int symbolNum) {
         Map<String, Byte> codeToCharMap = new HashMap<>();
         String temp;
         int maxBufferSize = Integer.parseInt(configWorker.get(GrammarWorker.BUFFER_SIZE));
@@ -117,7 +117,7 @@ public class HuffmanAlgorithm {
         byte[] extraSymbols = convertToPrimitive(exSym);
         byte[] decodedSymbols = convertToPrimitive(decSym);
 
-        return new HuffmanAlgorithmResult(decodedSymbols, huffmanTable, extraSymbols, source.length);
+        return new HuffmanAlgorithmResult(decodedSymbols, extraSymbols, source.length);
     }
 
     /**

@@ -12,8 +12,8 @@ import java.util.*;
 
 public class Manager {
     private Map<GrammarManager, String> configManager;
-    private BufferedInputStream inputStream;
-    private BufferedOutputStream outputStream;
+    private DataInputStream inputStream;
+    private DataOutputStream outputStream;
     private ArrayList<Executor> workers;
 
     public Manager(String fileName) {
@@ -35,9 +35,9 @@ public class Manager {
     public int openStreams() {
         try {
             FileInputStream inStream = new FileInputStream(configManager.get(GrammarManager.IN));
-            this.inputStream = new BufferedInputStream(inStream);
+            this.inputStream = new DataInputStream(inStream);
             FileOutputStream outStream = new FileOutputStream(configManager.get(GrammarManager.OUT));
-            this.outputStream = new BufferedOutputStream(outStream);
+            this.outputStream = new DataOutputStream(outStream);
         } catch (NullPointerException e) {
             Log.logReport("Exception thrown during stream open process.\n");
             return -1;
@@ -73,7 +73,6 @@ public class Manager {
      */
     public int introduceWorkers() {
         int i;
-        //conveyor.Executor provider, consumer;
         ArrayList<Integer> consumersList;
         Map<Integer, ArrayList<Integer>> schedule = new HashMap<>();
         new ConfigInterpreterWorkerSchedule(configManager.get(GrammarManager.WORKERS_SCHEDULE)).readConfiguration(schedule);
@@ -84,16 +83,14 @@ public class Manager {
             }
             if (consumersList.size() > 0) {
                 for (int j : consumersList) {
-                    if (workers.get(i) == null) {
+                    if (workers.get(i) == null || workers.get(i) == workers.get(j)) {
                         Log.logReport("Invalid worker in schedule.\n");
                         return -1;
                     }
-                    if (workers.get(i) == this) {
-                        Log.logReport("Invalid worker in schedule.\n");
-                        return -1;
-                    }
-                    workers.get(i).addSubscriber(new AdapterImpl(workers.get(j - 1)));
-                    //workers.get(i).SetConsumer(workers.get(j - 1));
+                    ExecutorImpl provider = (ExecutorImpl)workers.get(i);
+                    ExecutorImpl consumer = (ExecutorImpl)workers.get(i);
+                    workers.get(i).setConsumer(workers.get(j - 1));
+                    consumer.setAdapter(provider, provider.adapters.get(provider.currentType), provider.currentType);
                 }
             }
         }
@@ -107,9 +104,9 @@ public class Manager {
      */
     public int StartConveyor() {
         Executor first = workers.get(Integer.parseInt(configManager.get(GrammarManager.START)) - 1);
-        first.SetInput(inputStream);
+        first.setInput(inputStream);
         Executor last = workers.get(Integer.parseInt(configManager.get(GrammarManager.END)) - 1);
-        last.SetOutput(outputStream);
+        last.setOutput(outputStream);
         first.run();
         return 0;
     }

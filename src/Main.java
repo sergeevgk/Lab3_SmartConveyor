@@ -23,7 +23,7 @@ public class Main {
                 }
                 manager.closeStreams();
             }
-            //log before exit to report about program's work
+            //log before exit to report about program'setConsumer work
             Log.logReport("Program finished.");
             Log.close();
         } else {

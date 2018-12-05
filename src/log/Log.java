@@ -21,7 +21,7 @@ public class Log {
     private static FileWriter writer;
 
     /**
-     * @return 0 if log's writer is created correctly, -1 elsewise
+     * @return 0 if log'setConsumer writer is created correctly, -1 elsewise
      * <p>
      * inits log instance, open log stream
      */

@@ -1,40 +1,66 @@
 package conveyor;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 
 public interface Executor {
-    /**
-     * @param inputStream input buffered stream
-     * @return 0 if stream successfully set, -1 otherwise
-     */
-    int SetInput(BufferedInputStream inputStream);
 
     /**
-     * @param outputStream output buffered stream
-     * @return 0 if stream successfully set, -1 otherwise
+     * Types that provider can transmit
      */
-    int SetOutput(BufferedOutputStream outputStream);
+    enum APPROPRIATE_TYPES {  CHAR, BYTE, DOUBLE }
 
     /**
-     * @param ex conveyor.Executor instance, which consumes data provided by this conveyor.Executor
+     * The function for reading the configuration file of the executor.
+     * @param config - name of configuration file
+     * @return error code
      */
-    void SetConsumer(Executor ex);
+    int setConfig(String config);
 
     /**
-     * @return 0 if algorithm completed successfully, -1 otherwise
-     * <p>
-     * runs conveyor.Executor work algorithm
+     * The function for saving input stream
+     * @param input - opened input stream
+     */
+    void setInput(DataInputStream input);
+
+    /**
+     * The function for saving output stream
+     * @param output - opened output stream
+     */
+    void setOutput(DataOutputStream output);
+
+    /**
+     * The provider calls the consumer's methods 'getConsumedTypes', 'setAdapter' and retains the reference to the consumer.
+     * @param consumer - reference to the consumer
+     */
+    int setConsumer(Executor consumer);
+
+    /**
+     * Consumer returns types that he can get
+     * @return array of these types
+     */
+    APPROPRIATE_TYPES[] getConsumedTypes();
+
+    /**
+     * The provider calls the consumer's method to set inner class
+     * @param provider - reference to the provider
+     * @param adapter - reference to the inner class of the provider
+     * @param type - appropriate type of connection between provider and consumer
+     */
+    void setAdapter(Executor provider, Object adapter, APPROPRIATE_TYPES type);
+
+    /**
+     * The function for running the first executor
+     * @return error code
      */
     int run();
 
     /**
-     * @param input input data for consumer (provider doesn't use this method)
-     *              <p>
-     *              puts data from provider to its consumer
+     * Provider calls this method of consumer when ends processing his data
+     * @param provider - reference to the provider
+     * @return error code
      */
-    void put(Object input);
-
-    void notifySubscribers();
-    //String getCodeMode();
+    int put(Executor provider);
 }
+
+// error code: 0 - success, another - error

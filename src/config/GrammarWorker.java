@@ -2,6 +2,10 @@ package config;
 
 public enum GrammarWorker {
     CODE_MODE,
+    BUFFER_SIZE,
     START_POS,
-    BUFFER_SIZE
-}
+    REQUESTED_LENGTH,
+    TYPES_IN,
+    TYPES_OUT,
+    DELIMITER
+    }
