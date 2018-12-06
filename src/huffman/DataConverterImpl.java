@@ -1,8 +1,9 @@
 package huffman;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
-public class DataConverterImpl implements DataConverter{
+public class DataConverterImpl implements DataConverter {
     private static DataConverterImpl ourInstance = new DataConverterImpl();
 
     public static DataConverterImpl getInstance() {
@@ -11,6 +12,7 @@ public class DataConverterImpl implements DataConverter{
 
     private DataConverterImpl() {
     }
+
     public byte[] convertToPrimitive(ArrayList<Byte> list) {
         byte[] array = new byte[list.size()];
         Byte[] Array = list.toArray(new Byte[list.size()]);
@@ -35,8 +37,8 @@ public class DataConverterImpl implements DataConverter{
             System.arraycopy(source, i, temp, 0, len);
             value = 0;
             int k = 0;
-            if (len < 8){
-                byte[] lastByte = {0,0,0,0,0,0,0,0};
+            if (len < 8) {
+                byte[] lastByte = {0, 0, 0, 0, 0, 0, 0, 0};
                 System.arraycopy(temp, 0, lastByte, 0, len);
                 for (byte c : lastByte) {
                     value += Math.pow(2, k) * (c - 48);
@@ -56,26 +58,56 @@ public class DataConverterImpl implements DataConverter{
 
     }
 
-    public byte[] convertIntArrayToBytes(Integer[] source){
+    public Byte[] convertIntegerToByte(Integer[] source) {
         ArrayList<Byte> byteArray = new ArrayList<>();
-        //body
-        return convertToPrimitive(byteArray);
+        for (Integer it : source) {
+            Integer i = it;
+            for (int j = 0; j < 4; j += 1) {
+                byte b = ((Integer) (i % 256)).byteValue();
+                i /= 256;
+                byteArray.add(b);
+            }
+        }
+        return (Byte[]) byteArray.toArray();
     }
 
-    public byte[] convertStringToBytes(String source){
+    public Byte[] convertDoubleToByte(Double[] source) {
         ArrayList<Byte> byteArray = new ArrayList<>();
         //body
-        return convertToPrimitive(byteArray);
+        return (Byte[]) byteArray.toArray();
     }
-    public byte[] convertCharArrayToBytes(Character[] source){
+
+    public Byte[] convertStringToByte(String[] source) {
         ArrayList<Byte> byteArray = new ArrayList<>();
         //body
-        return convertToPrimitive(byteArray);
+        return (Byte[]) byteArray.toArray();
     }
-    public byte[] convertByteArrayToIntegerArray(Byte[] source){
+
+    public Integer[] convertByteToInteger(Byte[] source) {
         ArrayList<Integer> intArray = new ArrayList<>();
-        //body
-        return null;
+        int counter = 0;
+        int intValue = 0;
+        byte[] bytes = new byte[4];
+        for (Byte it : source) {
+            bytes[3 - counter] = it;
+            counter += 1;
+            if (counter == 4) {
+                intArray.add(ByteBuffer.wrap(bytes).getInt());
+                counter = 0;
+            }
+        }
+        return (Integer[]) intArray.toArray();
     }
 
+    public Double[] convertByteToDouble(Byte[] source) {
+        ArrayList<Double> doubleArray = new ArrayList<>();
+        //body
+        return (Double[]) doubleArray.toArray();
+    }
+
+    public String[] convertByteToString(Byte[] source) {
+        ArrayList<String> doubleArray = new ArrayList<>();
+        //body
+        return (String[]) doubleArray.toArray();
+    }
 }

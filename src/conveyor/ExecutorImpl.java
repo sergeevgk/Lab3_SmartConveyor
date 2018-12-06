@@ -194,13 +194,43 @@ public class ExecutorImpl implements Executor {
     }
 
     public int put(Executor provider) {//this.result = this;
+        ExecutorImpl prov = (ExecutorImpl) provider;
+        int counter;
+        int startPos = Integer.parseInt(this.configWorker.get(GrammarWorker.START_POS));// => to run() provider
+        int length = Integer.parseInt(this.configWorker.get(GrammarWorker.REQUESTED_LENGTH));
+        switch (currentType) {
+            case BYTE:
+                this.adapter = new ByteTransfer();
+                for (counter = 0; counter < length; counter += 1) {
+                    ((Byte[]) this.dataStorage)[counter] = ((ByteTransfer) adapter).getNextByte();
+                }
+                //?? cast to byte[] ??
+                break;
+            case DOUBLE:
+                this.adapter = new DoubleTransfer();
+                for (counter = 0; counter < length; counter += 1) {
+                    ((Double[]) this.dataStorage)[counter] = ((DoubleTransfer) adapter).getNextDouble();
+                }
+                //?? cast to byte[] ??
+                break;
+            case CHAR:
+                this.adapter = new CharTransfer();
+                for (counter = 0; counter < length; counter += 1) {
+                    ((Character[]) this.dataStorage)[counter] = ((CharTransfer) adapter).getNextChar();
+                }
+                //?? cast to byte[] ??
+                break;
+            default:
+                this.adapter = null;
 
+        }
         return 0;
     }
 
     class ByteTransfer implements InterfaceByteTransfer {
         public Byte getNextByte() {
-            return ((Byte[]) ExecutorImpl.this.dataStorage)[ExecutorImpl.this.dataStoragePos++];
+            ExecutorImpl provider = (ExecutorImpl) ExecutorImpl.this.provider;
+            return ((Byte[]) provider.dataStorage)[provider.dataStoragePos++];
         }
     }
 
