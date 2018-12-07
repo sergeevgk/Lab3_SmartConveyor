@@ -11,11 +11,11 @@ public interface DataConverter {
 
     Byte[] convertDoubleToByte(Double[] source);
 
-    Byte[] convertStringToByte(String[] source);
+    Byte[] convertCharToByte(Character[] source);
 
     Integer[] convertByteToInteger(Byte[] source);
 
     Double[] convertByteToDouble(Byte[] source);
 
-    String[] convertByteToString(Byte[] source);
+    Character[] convertByteToChar(Byte[] source);
 }

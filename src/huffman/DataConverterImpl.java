@@ -62,7 +62,7 @@ public class DataConverterImpl implements DataConverter {
         ArrayList<Byte> byteArray = new ArrayList<>();
         for (Integer it : source) {
             Integer i = it;
-            for (int j = 0; j < 4; j += 1) {
+            for (int j = 0; j < Integer.BYTES; j += 1) {
                 byte b = ((Integer) (i % 256)).byteValue();
                 i /= 256;
                 byteArray.add(b);
@@ -74,12 +74,27 @@ public class DataConverterImpl implements DataConverter {
     public Byte[] convertDoubleToByte(Double[] source) {
         ArrayList<Byte> byteArray = new ArrayList<>();
         //body
+        for (Double it: source){
+            ByteBuffer byteBuffer = ByteBuffer.allocate(Double.BYTES);
+            byteBuffer.putDouble(it);
+            for (byte b: byteBuffer.array()){
+                byteArray.add(b);
+            }
+        }
         return (Byte[]) byteArray.toArray();
     }
 
-    public Byte[] convertStringToByte(String[] source) {
+    public Byte[] convertCharToByte(Character[] source) {
         ArrayList<Byte> byteArray = new ArrayList<>();
         //body
+        for (Character it : source) {
+            Character i = it;
+            for (int j = 0; j < Character.BYTES; j += 1) {
+                byte b = ((Integer) (i % 256)).byteValue();
+                i = (char)(i / 256);
+                byteArray.add(b);
+            }
+        }
         return (Byte[]) byteArray.toArray();
     }
 
@@ -87,11 +102,11 @@ public class DataConverterImpl implements DataConverter {
         ArrayList<Integer> intArray = new ArrayList<>();
         int counter = 0;
         int intValue = 0;
-        byte[] bytes = new byte[4];
+        byte[] bytes = new byte[Integer.BYTES];
         for (Byte it : source) {
-            bytes[3 - counter] = it;
+            bytes[Integer.BYTES - 1 - counter] = it;
             counter += 1;
-            if (counter == 4) {
+            if (counter == Integer.BYTES) {
                 intArray.add(ByteBuffer.wrap(bytes).getInt());
                 counter = 0;
             }
@@ -99,15 +114,40 @@ public class DataConverterImpl implements DataConverter {
         return (Integer[]) intArray.toArray();
     }
 
-    public Double[] convertByteToDouble(Byte[] source) {
+    public Double[] convertByteToDouble(Byte[] source) {//??
         ArrayList<Double> doubleArray = new ArrayList<>();
-        //body
+        for (int i = 0; i < source.length; i += 8) {
+            ArrayList<Byte> byteArray = new ArrayList<>();
+            int num = Double.BYTES;
+            for (Byte it : source) {
+                byteArray.add(it);
+                num -= 1;
+                if (num == 0)
+                    break;
+            }
+            //body
+            ByteBuffer byteBuffer = ByteBuffer.allocate(Double.BYTES);
+            byteBuffer.put(convertToPrimitive(byteArray));
+            byteBuffer.flip();
+            byteBuffer.getDouble(0);
+        }
         return (Double[]) doubleArray.toArray();
     }
 
-    public String[] convertByteToString(Byte[] source) {
-        ArrayList<String> doubleArray = new ArrayList<>();
+    public Character[] convertByteToChar(Byte[] source) {
+        ArrayList<Character> charArray = new ArrayList<>();
         //body
-        return (String[]) doubleArray.toArray();
+        int counter = 0;
+        int intValue = 0;
+        byte[] bytes = new byte[Character.BYTES];
+        for (Byte it : source) {
+            bytes[3 - counter] = it;
+            counter += 1;
+            if (counter == 4) {
+                charArray.add(ByteBuffer.wrap(bytes).getChar());
+                counter = 0;
+            }
+        }
+        return (Character[]) charArray.toArray();
     }
 }

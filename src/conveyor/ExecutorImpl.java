@@ -22,22 +22,23 @@ public class ExecutorImpl implements Executor {
     private Object dataStorage;
     private int dataStoragePos;
 
-    private Executor provider;
-    private ArrayList<Executor> consumerList;
+    private Map<Executor, APPROPRIATE_TYPES> providers;
+    private Map<Executor, Integer[]> consumerList;
 
-    private Object adapter;
-    //public Map<APPROPRIATE_TYPES, Object> adapters;
+    private Object tempAdapter;
+    private Map<Executor, Object> adapters;
     public APPROPRIATE_TYPES currentType;
     private ArrayList<APPROPRIATE_TYPES> availableTypes;
 
     ExecutorImpl(String fileName, String inputFileName) {
         this.inputFileName = inputFileName;
         configWorker = new EnumMap<>(GrammarWorker.class);
-        consumerList = new ArrayList<>();
+        consumerList = new HashMap<>();
         this.availableTypes = new ArrayList<>();
         this.availableTypes.add(APPROPRIATE_TYPES.DOUBLE);
         this.availableTypes.add(APPROPRIATE_TYPES.BYTE);
         this.availableTypes.add(APPROPRIATE_TYPES.CHAR);
+        adapters = new HashMap<>();
     }
 
     public int setConfig(String config) {
@@ -61,24 +62,27 @@ public class ExecutorImpl implements Executor {
         return ((APPROPRIATE_TYPES[]) this.availableTypes.toArray());
     }
 
-
     public int setConsumer(Executor consumer) {
-        this.consumerList.add(consumer);
+        this.consumerList.put(consumer, new Integer[2]);
         for (APPROPRIATE_TYPES type : consumer.getConsumedTypes()) {
             for (APPROPRIATE_TYPES thisType : this.availableTypes) {
                 if (type == thisType) {
                     this.currentType = type;
                     if (currentType == APPROPRIATE_TYPES.BYTE) {
-                        this.adapter = new ByteTransfer();
+                        //adapters.put(this, new ByteTransfer());
+                        this.tempAdapter = new ByteTransfer();
                     } else if (currentType == APPROPRIATE_TYPES.DOUBLE) {
-                        this.adapter = new DoubleTransfer();
+                        this.tempAdapter = new DoubleTransfer();
+                        //adapters.put(this, new DoubleTransfer());
                     } else if (currentType == APPROPRIATE_TYPES.CHAR) {
-                        this.adapter = new CharTransfer();
+                        this.tempAdapter = new CharTransfer();
+                        //adapters.put(this, new CharTransfer());
                     } else {
-                        this.adapter = null;
+                        this.tempAdapter = null;
+                        //adapters.put(this, null);
                     }
                 }
-                consumer.setAdapter(this, adapter, currentType);
+                consumer.setAdapter(this, tempAdapter, currentType);
                 return 0;
             }
         }
@@ -87,9 +91,19 @@ public class ExecutorImpl implements Executor {
     }
 
     public void setAdapter(Executor provider, Object adapter, APPROPRIATE_TYPES type) {
-        this.adapter = adapter;
-        this.provider = provider;
+        this.adapters.put(provider, adapter);
+        this.providers.put(provider, type);
         this.currentType = type;
+        int startPos = Integer.parseInt(this.configWorker.get(GrammarWorker.START_POS));
+        int length = Integer.parseInt(this.configWorker.get(GrammarWorker.REQUESTED_LENGTH));
+        provider.subscribe(this, startPos, length);
+    }
+
+    public void subscribe(Executor consumer, int startPos, int length){
+        Integer[] pair = new Integer[2];
+        pair[0] = startPos;
+        pair[1] = length;
+        this.consumerList.put(consumer, pair);
     }
 
     private void buildHuffmanTable() {
@@ -155,7 +169,7 @@ public class ExecutorImpl implements Executor {
             }
 //            consumer.put(res);
 //            consumer.run();
-            for (Executor sub : consumerList) {
+            for (Executor sub : consumerList.keySet()) {
                 //notify; each subscriber gets his *configOptions* part of data
             }
 
@@ -163,7 +177,7 @@ public class ExecutorImpl implements Executor {
         return 0;
     }
 
-    private int processToFile(HuffmanAlgorithm algorithm) {
+    private int processToFile(HuffmanAlgorithm algorithm) {//просто напечатать
         int bufferSize = Integer.parseInt(configWorker.get(GrammarWorker.BUFFER_SIZE));
         //byte[] bitInput = DataConverterImpl.getInstance().convertByteToBitArray(result.getResult(), result.getUncodedLength());
         int extraLength = 0;
@@ -201,50 +215,52 @@ public class ExecutorImpl implements Executor {
     }
 
     public int put(Executor provider) {//this.result = this;
-        ExecutorImpl prov = (ExecutorImpl) provider;
         int counter;
-        int startPos = Integer.parseInt(this.configWorker.get(GrammarWorker.START_POS));// => to run() provider
-        int length = Integer.parseInt(this.configWorker.get(GrammarWorker.REQUESTED_LENGTH));
+        Object adapter = this.adapters.get(provider);
         switch (currentType) {
             case BYTE:
-                for (counter = 0; counter < length; counter += 1) {
+                for (counter = 0; counter < ((Byte[]) this.dataStorage).length; counter += 1) {
                     ((Byte[]) this.dataStorage)[counter] = ((ByteTransfer) adapter).getNextByte();
                 }
                 //?? cast to byte[] ??
                 break;
             case DOUBLE:
-                for (counter = 0; counter < length; counter += 1) {
+                for (counter = 0; counter < ((Double[]) this.dataStorage).length; counter += 1) {
                     ((Double[]) this.dataStorage)[counter] = ((DoubleTransfer) adapter).getNextDouble();
                 }
                 //?? cast to byte[] ??
                 break;
             case CHAR:
-                for (counter = 0; counter < length; counter += 1) {
+                for (counter = 0; counter < ((Character[]) this.dataStorage).length; counter += 1) {
                     ((Character[]) this.dataStorage)[counter] = ((CharTransfer) adapter).getNextChar();
                 }
                 //?? cast to byte[] ??
                 break;
             default:
-                this.adapter = null;
+                return -1; //error
+                //Log.logReport();
         }
         return 0;
     }
 
     class ByteTransfer implements InterfaceByteTransfer {
         public Byte getNextByte() {
-            ExecutorImpl provider = (ExecutorImpl) ExecutorImpl.this.provider;
-            return ((Byte[]) provider.dataStorage)[provider.dataStoragePos++];
+            //ExecutorImpl provider = (ExecutorImpl) ExecutorImpl.this.provider;
+            assert (ExecutorImpl.this.dataStoragePos < ((Byte[]) ExecutorImpl.this.dataStorage).length);
+            return ((Byte[]) ExecutorImpl.this.dataStorage)[ExecutorImpl.this.dataStoragePos++];
         }
     }
 
     class DoubleTransfer implements InterfaceDoubleTransfer {
         public Double getNextDouble() {
+            assert (ExecutorImpl.this.dataStoragePos < ((Double[]) ExecutorImpl.this.dataStorage).length);
             return ((Double[]) ExecutorImpl.this.dataStorage)[ExecutorImpl.this.dataStoragePos++];
         }
     }
 
     class CharTransfer implements InterfaceCharTransfer {
         public Character getNextChar() {
+            assert (ExecutorImpl.this.dataStoragePos < ((Character[]) ExecutorImpl.this.dataStorage).length);
             return ((Character[]) ExecutorImpl.this.dataStorage)[ExecutorImpl.this.dataStoragePos++];
         }
     }
