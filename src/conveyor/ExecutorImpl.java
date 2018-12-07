@@ -26,7 +26,7 @@ public class ExecutorImpl implements Executor {
     private ArrayList<Executor> consumerList;
 
     private Object adapter;
-    public Map<APPROPRIATE_TYPES, Object> adapters;
+    //public Map<APPROPRIATE_TYPES, Object> adapters;
     public APPROPRIATE_TYPES currentType;
     private ArrayList<APPROPRIATE_TYPES> availableTypes;
 
@@ -38,10 +38,6 @@ public class ExecutorImpl implements Executor {
         this.availableTypes.add(APPROPRIATE_TYPES.DOUBLE);
         this.availableTypes.add(APPROPRIATE_TYPES.BYTE);
         this.availableTypes.add(APPROPRIATE_TYPES.CHAR);
-        this.adapters = new HashMap<>();
-        this.adapters.put(APPROPRIATE_TYPES.BYTE, ByteTransfer.class);
-        this.adapters.put(APPROPRIATE_TYPES.DOUBLE, DoubleTransfer.class);
-        this.adapters.put(APPROPRIATE_TYPES.CHAR, CharTransfer.class);
     }
 
     public int setConfig(String config) {
@@ -72,10 +68,21 @@ public class ExecutorImpl implements Executor {
             for (APPROPRIATE_TYPES thisType : this.availableTypes) {
                 if (type == thisType) {
                     this.currentType = type;
-                    return 0;
+                    if (currentType == APPROPRIATE_TYPES.BYTE) {
+                        this.adapter = new ByteTransfer();
+                    } else if (currentType == APPROPRIATE_TYPES.DOUBLE) {
+                        this.adapter = new DoubleTransfer();
+                    } else if (currentType == APPROPRIATE_TYPES.CHAR) {
+                        this.adapter = new CharTransfer();
+                    } else {
+                        this.adapter = null;
+                    }
                 }
+                consumer.setAdapter(this, adapter, currentType);
+                return 0;
             }
         }
+
         return -1;
     }
 
@@ -200,21 +207,18 @@ public class ExecutorImpl implements Executor {
         int length = Integer.parseInt(this.configWorker.get(GrammarWorker.REQUESTED_LENGTH));
         switch (currentType) {
             case BYTE:
-                this.adapter = new ByteTransfer();
                 for (counter = 0; counter < length; counter += 1) {
                     ((Byte[]) this.dataStorage)[counter] = ((ByteTransfer) adapter).getNextByte();
                 }
                 //?? cast to byte[] ??
                 break;
             case DOUBLE:
-                this.adapter = new DoubleTransfer();
                 for (counter = 0; counter < length; counter += 1) {
                     ((Double[]) this.dataStorage)[counter] = ((DoubleTransfer) adapter).getNextDouble();
                 }
                 //?? cast to byte[] ??
                 break;
             case CHAR:
-                this.adapter = new CharTransfer();
                 for (counter = 0; counter < length; counter += 1) {
                     ((Character[]) this.dataStorage)[counter] = ((CharTransfer) adapter).getNextChar();
                 }
@@ -222,7 +226,6 @@ public class ExecutorImpl implements Executor {
                 break;
             default:
                 this.adapter = null;
-
         }
         return 0;
     }

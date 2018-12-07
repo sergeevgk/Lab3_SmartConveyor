@@ -87,10 +87,7 @@ public class Manager {
                         Log.logReport("Invalid worker in schedule.\n");
                         return -1;
                     }
-                    ExecutorImpl provider = (ExecutorImpl)workers.get(i);
-                    ExecutorImpl consumer = (ExecutorImpl)workers.get(i);
                     workers.get(i).setConsumer(workers.get(j - 1));
-                    consumer.setAdapter(provider, provider.adapters.get(provider.currentType), provider.currentType);
                 }
             }
         }
