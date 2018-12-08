@@ -49,7 +49,7 @@ public class HuffmanAlgorithm {
      * @return HuffmanAlgorithmResult with empty extraSymbols field - algorithm encodes all given values in sequence
      */
     private HuffmanAlgorithmResult encode(byte[] source) {
-        DataConverterImpl conv = DataConverterImpl.getInstance();
+        DataConverterImpl conv = new DataConverterImpl();
         byte[] extra = {};
         byte[] tempRes = toHuffman(source, huffmanTable).getBytes();
         byte[] res = conv.convertBitArrayToBytes(tempRes);

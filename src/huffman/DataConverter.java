@@ -3,7 +3,12 @@ package huffman;
 import java.util.ArrayList;
 
 public interface DataConverter {
+
+    Byte[] wrapArray(byte[] source);
+
     byte[] convertToPrimitive(ArrayList<Byte> list);
+
+    byte[] convertToPrimitiveArray(Byte[] a);
 
     byte[] convertBitArrayToBytes(byte[] source);
 

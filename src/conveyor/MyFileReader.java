@@ -21,7 +21,7 @@ public class MyFileReader {
      * <p>
      * reads input file using buffered input stream
      */
-    public final byte[] readInputFile() { //readToBuffer
+    public final byte[] readInputFile(int bufferSize) { //readToBuffer
         byte[] buf = new byte[bufferSize];
         byte[] res;
         int realBufSize;

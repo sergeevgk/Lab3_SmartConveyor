@@ -54,12 +54,13 @@ public class Manager {
      * Method creates workers and puts them to ArrayList()
      */
     public int createWorkers() {
-        Map<String, String> configWorkerListFileNames = new HashMap<>();
+        Map<String, String> configWorkerListFileNames = new TreeMap<>();
         ConfigInterpreterWorkers configWorkerListReader;
         configWorkerListReader = new ConfigInterpreterWorkers(configManager.get(GrammarManager.WORKER_LIST));
         configWorkerListReader.readConfiguration(configWorkerListFileNames);
         for (String workerFileName : configWorkerListFileNames.keySet()) {
-            Executor newWorker = new ExecutorImpl(configWorkerListFileNames.get(workerFileName), configManager.get(GrammarManager.IN));
+            Executor newWorker = new ExecutorImpl(configManager.get(GrammarManager.IN));
+            newWorker.setConfig(configWorkerListFileNames.get(workerFileName));
             this.workers.add(newWorker);
         }
         return 0;
@@ -77,17 +78,17 @@ public class Manager {
         Map<Integer, ArrayList<Integer>> schedule = new HashMap<>();
         new ConfigInterpreterWorkerSchedule(configManager.get(GrammarManager.WORKERS_SCHEDULE)).readConfiguration(schedule);
         for (i = 0; i < workers.size(); i += 1) {
-            if ((consumersList = schedule.get(i + 1)) == null) {
+            if ((consumersList = schedule.get(i)) == null) {
                 Log.logReport("Invalid worker introduce.\n");
                 return -1;
             }
             if (consumersList.size() > 0) {
                 for (int j : consumersList) {
-                    if (workers.get(i) == null || workers.get(i) == workers.get(j)) {
+                    if (workers.get(i) == null || i == j) {
                         Log.logReport("Invalid worker in schedule.\n");
                         return -1;
                     }
-                    workers.get(i).setConsumer(workers.get(j - 1));
+                    workers.get(i).setConsumer(workers.get(j));
                 }
             }
         }
@@ -100,9 +101,9 @@ public class Manager {
      * Starts encode-decode conveyor with at least two workers
      */
     public int StartConveyor() {
-        Executor first = workers.get(Integer.parseInt(configManager.get(GrammarManager.START)) - 1);
+        Executor first = workers.get(Integer.parseInt(configManager.get(GrammarManager.START)));
         first.setInput(inputStream);
-        Executor last = workers.get(Integer.parseInt(configManager.get(GrammarManager.END)) - 1);
+        Executor last = workers.get(Integer.parseInt(configManager.get(GrammarManager.END)));
         last.setOutput(outputStream);
         first.run();
         return 0;

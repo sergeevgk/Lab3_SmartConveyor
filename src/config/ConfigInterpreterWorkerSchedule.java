@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 public class ConfigInterpreterWorkerSchedule extends ConfigInterpreterBase<Integer, ArrayList<Integer>> {
-    private final String DELIMITER_SCHEDULE = ", ";
+    private final String DELIMITER_SCHEDULE = ",";
     private final String DELIMITER = ":";
 
     public ConfigInterpreterWorkerSchedule(String fileName) {

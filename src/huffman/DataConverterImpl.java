@@ -4,13 +4,21 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 public class DataConverterImpl implements DataConverter {
-    private static DataConverterImpl ourInstance = new DataConverterImpl();
+    //private static DataConverterImpl ourInstance = new DataConverterImpl();
 
-    public static DataConverterImpl getInstance() {
+ /*   public static DataConverterImpl getInstance() {
         return ourInstance;
+    }*/
+
+    public  DataConverterImpl() {
     }
 
-    private DataConverterImpl() {
+    public Byte[] wrapArray(byte[] source){
+        int i = 0;
+        Byte[] out = new Byte[source.length];
+        for (byte b: source)
+            out[i++] = b;
+        return out;
     }
 
     public byte[] convertToPrimitive(ArrayList<Byte> list) {
@@ -19,6 +27,16 @@ public class DataConverterImpl implements DataConverter {
         int index = 0;
         for (Byte B : Array) {
             array[index] = Array[index];
+            index += 1;
+        }
+        return array;
+    }
+
+    public byte[] convertToPrimitiveArray(Byte[] a) {
+        byte[] array = new byte[a.length];
+        int index = 0;
+        for (Byte B : a) {
+            array[index] = B;
             index += 1;
         }
         return array;

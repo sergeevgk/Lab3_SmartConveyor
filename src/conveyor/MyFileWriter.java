@@ -23,9 +23,9 @@ public class MyFileWriter {
      *               <p>
      *               smethod writes byte[] res to output buffered stream
      */
-    public final void writeOutputFile(HuffmanAlgorithmResult result) { //writeToFile
+    public final void writeOutputFile(byte[] result) { //writeToFile
         try {
-            writerResult.write(result.getResult());//////////////
+            writerResult.write(result);//////////////
             writerResult.flush();
            /* if (codeMode.equals("0"))
                 writeHuffmanTable(result.getHuffmanTable());*/
