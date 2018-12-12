@@ -30,13 +30,6 @@ public interface Executor {
     void setOutput(DataOutputStream output);
 
     /**
-     * Consumer's method which is called to give provider information about consumer's data borders
-     * @param startPos
-     * @param length
-     */
-    void subscribe(Executor consumer ,int startPos, int length);
-
-    /**
      * The provider calls the consumer's methods 'getConsumedTypes', 'setAdapter' and retains the reference to the consumer.
      * @param consumer - reference to the consumer
      */

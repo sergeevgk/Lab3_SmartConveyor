@@ -2,6 +2,6 @@ package conveyor;
 
 public interface InterfaceCharTransfer {
 
-    Character getNextChar();
+    Character getNextChar(Object Metrics);
 
 }

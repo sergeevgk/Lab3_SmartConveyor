@@ -2,6 +2,6 @@ package conveyor;
 
 public interface InterfaceDoubleTransfer {
 
-    Double getNextDouble();
+    Double getNextDouble(Object Metrics);
 
 }

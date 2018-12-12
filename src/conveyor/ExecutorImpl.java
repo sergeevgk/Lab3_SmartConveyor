@@ -3,6 +3,7 @@ package conveyor;
 import config.ConfigInterpreterWorkerParameters;
 import config.GrammarWorker;
 import huffman.*;
+import javafx.util.Pair;
 import log.Log;
 
 import java.io.DataInputStream;
@@ -25,18 +26,25 @@ public class ExecutorImpl implements Executor {
 
     private Object tempAdapter;
     private Map<Executor, Object> adapters;
-    public APPROPRIATE_TYPES currentType;
-    private APPROPRIATE_TYPES[] availableTypes;
+    private APPROPRIATE_TYPES currentType;
+    private APPROPRIATE_TYPES[] availableTypesIn;
+    private APPROPRIATE_TYPES[] availableTypesOut;
 
 
     ExecutorImpl(String inputFileName) {
         this.inputFileName = inputFileName;
         configWorker = new EnumMap<>(GrammarWorker.class);
         consumerMap = new HashMap<>();
-        this.availableTypes = new APPROPRIATE_TYPES[3];
+        this.availableTypesIn = new APPROPRIATE_TYPES[3];
+        this.availableTypesOut = new APPROPRIATE_TYPES[3];
         adapters = new HashMap<>();
     }
 
+    /**
+     * Reads configuration file of worker and sets necessary parameters
+     * @param config - name of configuration file
+     * @return
+     */
     public int setConfig(String config) {
         ConfigInterpreterWorkerParameters workerInterp = new ConfigInterpreterWorkerParameters(config);
         if (workerInterp.readConfiguration(configWorker) != 0) {
@@ -44,6 +52,27 @@ public class ExecutorImpl implements Executor {
             return -1;
         }
         //TODO set available types
+        String delimiter = configWorker.get(GrammarWorker.DELIMITER);
+        int counter = 0;
+        for (String typeIn : this.configWorker.get(GrammarWorker.TYPES_IN).split(delimiter)) {
+            if (typeIn.equals("byte")) {
+                this.availableTypesIn[counter++] = APPROPRIATE_TYPES.BYTE;
+            } else if (typeIn.equals("double")) {
+                this.availableTypesIn[counter++] = APPROPRIATE_TYPES.DOUBLE;
+            } else if (typeIn.equals("char")) {
+                this.availableTypesIn[counter++] = APPROPRIATE_TYPES.CHAR;
+            }
+        }
+        counter = 0;
+        for (String typeOut : this.configWorker.get(GrammarWorker.TYPES_OUT).split(delimiter)) {
+            if (typeOut.equals("byte")) {
+                this.availableTypesOut[counter++] = APPROPRIATE_TYPES.BYTE;
+            } else if (typeOut.equals("double")) {
+                this.availableTypesOut[counter++] = APPROPRIATE_TYPES.DOUBLE;
+            } else if (typeOut.equals("char")) {
+                this.availableTypesOut[counter++] = APPROPRIATE_TYPES.CHAR;
+            }
+        }
         return 0;
     }
 
@@ -55,14 +84,22 @@ public class ExecutorImpl implements Executor {
         this.outputStream = outputStream;
     }
 
+    /**
+     * @return consumed types
+     */
     public APPROPRIATE_TYPES[] getConsumedTypes() {
-        return this.availableTypes;
+        return this.availableTypesIn;
     }
 
+    /**
+     * Sets consumer for current (this) provider and considers currentType for adapter
+     * @param consumer - reference to the consumer
+     * @return
+     */
     public int setConsumer(Executor consumer) {
         this.consumerMap.put(consumer, new Integer[2]);
         for (APPROPRIATE_TYPES type : consumer.getConsumedTypes()) {
-            for (APPROPRIATE_TYPES thisType : this.availableTypes) {
+            for (APPROPRIATE_TYPES thisType : this.availableTypesOut) {
                 if (type == thisType) {
                     this.currentType = type;
                     if (currentType == APPROPRIATE_TYPES.BYTE) {
@@ -87,22 +124,20 @@ public class ExecutorImpl implements Executor {
         return -1;
     }
 
+    /**
+     * Sets adapter for consumer, when we already have created adapter of currentType in provider
+     * @param provider - reference to the provider
+     * @param adapter - reference to the inner class of the provider
+     * @param type - appropriate type of connection between provider and consumer
+     */
     public void setAdapter(Executor provider, Object adapter, APPROPRIATE_TYPES type) {
         this.adapters.put(provider, adapter);
-        //this.providers.put(provider, type);
         this.currentType = type;
-        int startPos = Integer.parseInt(this.configWorker.get(GrammarWorker.START_POS));
-        int length = Integer.parseInt(this.configWorker.get(GrammarWorker.REQUESTED_LENGTH));
-        provider.subscribe(this, startPos, length);
     }
 
-    public void subscribe(Executor consumer, int startPos, int length) {
-        Integer[] pair = new Integer[2];
-        pair[0] = startPos;
-        pair[1] = length;
-        this.consumerMap.put(consumer, pair);
-    }
-
+    /**
+     * Builds huffman table for input file and writes it to file, which name is contained in configuration file
+     */
     private void buildHuffmanTable() {
         Map<Byte, String> huffmanTable;
         HuffmanTableBuilder huffmanTableBuilder = new HuffmanTableBuilder(this.inputFileName);
@@ -113,19 +148,26 @@ public class ExecutorImpl implements Executor {
         this.huffmanTable = huffmanTable;
     }
 
+    /**
+     * Reads huffman table from file, which name is contained in configuration file
+     */
     private void readHuffmanTable() {
         this.huffmanTable = new HashMap<>();
         HuffmanTableReader.getInstance().readHuffmanTable(this.huffmanTable);
     }
 
+    /**
+     * Runs worker's coding process
+     * @return error code
+     */
     public int run() {
         HuffmanAlgorithm algorithm;
         if (this.inputStream != null && this.outputStream != null) {
-            buildHuffmanTable();
+            readHuffmanTable();
             algorithm = new HuffmanAlgorithm(configWorker, huffmanTable);
             processFromToFile(algorithm);
         } else if (this.inputStream != null) {
-            buildHuffmanTable();
+            readHuffmanTable();
             algorithm = new HuffmanAlgorithm(configWorker, huffmanTable);
             processFromFile(algorithm);
         } else if (this.outputStream != null) {
@@ -140,6 +182,11 @@ public class ExecutorImpl implements Executor {
         return 0;
     }
 
+    /**
+     * Method for those workers, who read input file and write to output file
+     * @param algorithm - algorithm which worker is using to encode / decode byte array
+     * @return error code
+     */
     private int processFromToFile(HuffmanAlgorithm algorithm) {
         MyFileReader fileReader = new MyFileReader(configWorker, inputStream);
         MyFileWriter fileWriter = new MyFileWriter(configWorker, outputStream);
@@ -156,125 +203,155 @@ public class ExecutorImpl implements Executor {
         return 0;
     }
 
-    private Comparator<Executor> getCompByStartPos() {
-        return new Comparator<Executor>() {
-            @Override
-            public int compare(Executor s1, Executor s2) {
-                return (ExecutorImpl.this.consumerMap.get(s1)[0] - ExecutorImpl.this.consumerMap.get(s2)[0]);
-            }
-        };
-    }
-
-    //completed
+    /**
+     * Method for those workers, who read input file and write to output file
+     * @param algorithm - algorithm which worker is using to encode / decode byte array
+     * @return error code
+     */
     private int processFromFile(HuffmanAlgorithm algorithm) {
+        int selfBufferSize = Integer.parseInt(configWorker.get(GrammarWorker.BUFFER_SIZE));
         MyFileReader fileReader = new MyFileReader(configWorker, inputStream);
         byte[] buffer;
         HuffmanAlgorithmResult res;
         DataConverter converter = new DataConverterImpl();
-        ArrayList<Executor> consumerList = new ArrayList<>(consumerMap.keySet());
-        consumerList.sort(getCompByStartPos());
-        for (Executor sub : consumerList) {
-            int bufferSize = consumerMap.get(sub)[1];
-
-            while ((buffer = fileReader.readInputFile(bufferSize)) != null) {
-                res = algorithm.startProcess(buffer, 0);
-                if (res == null) {
-                    return -1;
+        while ((buffer = fileReader.readInputFile(selfBufferSize)) != null) {
+            dataStorage = buffer;//byte[]
+            dataStorage = converter.wrapArray((byte[]) dataStorage);
+            for (Executor sub : consumerMap.keySet()) {
+                if (sub.put(this) == 0) {
+                    sub.run();
                 }
-                dataStorage = res.getResult();//byte[]
-                dataStorage = converter.wrapArray((byte[]) dataStorage);
-                sub.put(this);
-                sub.run();
+                this.dataStoragePos = 0;
             }
         }
         return 0;
     }
 
+    /**
+     * Method for those workers, who get data from other workers and write to output file
+     * @param algorithm - algorithm which worker is using to encode / decode byte array
+     * @return error code
+     */
     private int processToFile(HuffmanAlgorithm algorithm) {//просто напечатать
         int bufferSize = Integer.parseInt(configWorker.get(GrammarWorker.BUFFER_SIZE));
         MyFileWriter fileWriter = new MyFileWriter(configWorker, outputStream);
+        if (dataStorage == null){
+            return 0;
+        }
         for (int writtenLen = 0; writtenLen < ((byte[]) this.dataStorage).length; writtenLen += bufferSize) {
-            byte[] output = new byte[bufferSize];
-            System.arraycopy((byte[]) this.dataStorage, writtenLen, output, 0, bufferSize);
+            int size = ((byte[]) this.dataStorage).length < bufferSize ? ((byte[]) this.dataStorage).length : bufferSize;
+            byte[] output = new byte[size];
+            System.arraycopy((byte[]) this.dataStorage, writtenLen, output, 0, size);
             fileWriter.writeOutputFile(output);
         }
         //fileWriter.writeOutputFile((byte[])this.dataStorage);
         return 0;
     }
 
+    /**
+     * Method for those workers, who get data from some workers(providers) and put data to other workers(consumers)
+     * @param algorithm - algorithm which worker is using to encode / decode byte array
+     * @return error code
+     */
     private int processProviderConsumer(HuffmanAlgorithm algorithm) {
         int length = 0;
         int selfBufferSize = Integer.parseInt(configWorker.get(GrammarWorker.BUFFER_SIZE));
-        ArrayList<Executor> consumerList = new ArrayList<>(consumerMap.keySet());
-        consumerList.sort(getCompByStartPos());
         DataConverter converter = new DataConverterImpl();
-        for (Executor sub : consumerList) {
-            int bufferSize = consumerMap.get(sub)[1];
-            int startPos = consumerMap.get(sub)[0];
-            for (int i = startPos; i < bufferSize; i += (selfBufferSize - length)) {//pos in result
-                int size = bufferSize < selfBufferSize ? bufferSize : selfBufferSize;
-                byte[] buffer = new byte[size];
-                System.arraycopy((byte[]) dataStorage, i, buffer, 0, size);
-                HuffmanAlgorithmResult result = algorithm.startProcess(buffer, Integer.parseInt(configWorker.get(GrammarWorker.REQUESTED_LENGTH)));
-                length = result.getExtra().length;
+        dataStorageTemp = dataStorage;
+        if (dataStorage == null){
+            return 0;
+        }
+        for (int i = 0; i < ((byte[]) dataStorageTemp).length; i += (selfBufferSize - length)) {//pos in result
+            int size = ((byte[]) dataStorageTemp).length < selfBufferSize ? ((byte[]) dataStorageTemp).length : selfBufferSize;
+            byte[] buffer = new byte[size];
+            System.arraycopy((byte[]) dataStorageTemp, i, buffer, 0, size);
+            HuffmanAlgorithmResult result = algorithm.startProcess(buffer, Integer.parseInt(configWorker.get(GrammarWorker.REQUESTED_LENGTH)));
+            length = result.getExtra().length;
+            for (Executor sub : consumerMap.keySet()) {
                 dataStorage = result.getResult();
                 dataStorage = converter.wrapArray((byte[]) dataStorage);
-                sub.put(this);
-                sub.run();
+                this.dataStoragePos = 0;
+                if (sub.put(this) == 0) {
+                    sub.run();
+                }
+                this.dataStoragePos = 0;
+                dataStorage = dataStorageTemp;
             }
         }
         return 0;
     }
 
-    public int put(Executor provider) {//this.result = this;
+    /**
+     *
+     * @param provider - reference to the provider
+     * @return
+     */
+    public int put(Executor provider) {
         int counter;
+        int startPos = Integer.parseInt(this.configWorker.get(GrammarWorker.START_POS));
+        int requestedLength = Integer.parseInt(this.configWorker.get(GrammarWorker.REQUESTED_LENGTH));
         Object adapter = this.adapters.get(provider);
         DataConverter converter = new DataConverterImpl();
-        switch (currentType) {
-            case BYTE:
-                ArrayList<Byte> byteArrayList = new ArrayList<>();
-                for (counter = 0; counter < ((Byte[]) this.dataStorage).length; counter += 1) {
-                    byteArrayList.add(((ByteTransfer) adapter).getNextByte());
-                }
-                dataStorage = converter.convertToPrimitive(byteArrayList);
-                break;
-            case DOUBLE:
-                for (counter = 0; counter < ((Double[]) this.dataStorage).length; counter += 1) {
-                    ((Double[]) this.dataStorage)[counter] = ((DoubleTransfer) adapter).getNextDouble();
-                }
-                this.dataStorage = converter.convertDoubleToByte((Double[]) dataStorage);
-                dataStorage = converter.convertToPrimitiveArray((Byte[]) dataStorage);
-                break;
-            case CHAR:
-                for (counter = 0; counter < ((Character[]) this.dataStorage).length; counter += 1) {
-                    ((Character[]) this.dataStorage)[counter] = ((CharTransfer) adapter).getNextChar();
-                }
-                this.dataStorage = converter.convertCharToByte((Character[]) dataStorage);
-                dataStorage = converter.convertToPrimitiveArray((Byte[]) dataStorage);
-                break;
-            default:
-                return -1; //error
-            //Log.logReport();
+        Pair<Integer, Integer> blockMetrics = new Pair<>(startPos, requestedLength);
+        ArrayList<Byte> byteArrayList = new ArrayList<>();
+        try {
+            switch (currentType) {
+                case BYTE:
+                    for (counter = 0; counter < requestedLength; counter += 1) {
+                        byteArrayList.add(((ByteTransfer) adapter).getNextByte(blockMetrics));
+                    }
+                    dataStorage = converter.convertToPrimitive(byteArrayList);
+                    break;
+                case DOUBLE:
+                    for (counter = 0; counter < requestedLength; counter += 1) {
+                        ((Double[]) this.dataStorage)[counter] = ((DoubleTransfer) adapter).getNextDouble(blockMetrics);
+                    }
+                    this.dataStorage = converter.convertDoubleToByte((Double[]) dataStorage);
+                    dataStorage = converter.convertToPrimitiveArray((Byte[]) dataStorage);
+                    break;
+                case CHAR:
+                    for (counter = 0; counter < requestedLength; counter += 1) {
+                        ((Character[]) this.dataStorage)[counter] = ((CharTransfer) adapter).getNextChar(blockMetrics);
+                    }
+                    this.dataStorage = converter.convertCharToByte((Character[]) dataStorage);
+                    dataStorage = converter.convertToPrimitiveArray((Byte[]) dataStorage);
+                    break;
+                default:
+                    return 0; //error
+                //Log.logReport();
+            }
+        } catch (ArrayIndexOutOfBoundsException e) {
+            Log.logReport("Consumer tried to read out of bounds");
+            dataStorage = converter.convertToPrimitive(byteArrayList);
+            return 0;
         }
         return 0;
     }
 
-    class ByteTransfer implements InterfaceByteTransfer {
-        public Byte getNextByte() {
-            assert (dataStoragePos < ((Byte[]) dataStorage).length);
+    class ByteTransfer implements InterfaceByteTransfer {//HOW CAN WE REPORT ERROR???
+
+        public Byte getNextByte(Object blockMetrics) {
+            if (dataStoragePos == 0)
+                dataStoragePos = ((Pair<Integer, Integer>) blockMetrics).getKey();
+            if (dataStoragePos > ((Byte[]) dataStorage).length)
+                throw new ArrayIndexOutOfBoundsException("123");
             return ((Byte[]) dataStorage)[dataStoragePos++];
         }
     }
 
     class DoubleTransfer implements InterfaceDoubleTransfer {
-        public Double getNextDouble() {
+        public Double getNextDouble(Object blockMetrics) {
+            if (dataStoragePos == 0)
+                dataStoragePos = ((Pair<Integer, Integer>) blockMetrics).getKey();
             assert (dataStoragePos < ((Double[]) dataStorage).length);
             return ((Double[]) dataStorage)[dataStoragePos++];
         }
     }
 
     class CharTransfer implements InterfaceCharTransfer {
-        public Character getNextChar() {
+        public Character getNextChar(Object blockMetrics) {
+            if (dataStoragePos == 0)
+                dataStoragePos = ((Pair<Integer, Integer>) blockMetrics).getKey();
             assert (dataStoragePos < ((Character[]) dataStorage).length);
             return ((Character[]) dataStorage)[dataStoragePos++];
         }

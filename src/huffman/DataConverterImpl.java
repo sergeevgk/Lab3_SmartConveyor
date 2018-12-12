@@ -4,11 +4,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 public class DataConverterImpl implements DataConverter {
-    //private static DataConverterImpl ourInstance = new DataConverterImpl();
-
- /*   public static DataConverterImpl getInstance() {
-        return ourInstance;
-    }*/
 
     public  DataConverterImpl() {
     }

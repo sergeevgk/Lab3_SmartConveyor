@@ -43,18 +43,12 @@ public class ConfigInterpreterHuffmanTable extends ConfigInterpreterBase<Byte, S
             int c;
             byte b;
             while (((line = reader.readLine()) != null)) {
-                //b = (byte) c;
                 String[] set = line.split(DELIMITER);
                 b = (byte) Integer.parseInt(set[0]);
-               /* if (set.length != 2) {
-                    Log.logReport("Invalid configuration syntax in huffman table: " + fileName);
-                    return -1;
-                }*/
                 if (stream.skip(line.length()) == 0) {
                     Log.logReport("Error while reading Huffman table file: " + fileName + ".\n");
                     return -1;
                 }
-                // System.out.println("0");
                 addConfiguration(configMap, set[0], set[1]);
             }
         } catch (IOException e) {
@@ -64,6 +58,7 @@ public class ConfigInterpreterHuffmanTable extends ConfigInterpreterBase<Byte, S
             Log.logReport("Array index out of bounds.\n");
             return -1;
         }
+
         return 0;
     }
 }
